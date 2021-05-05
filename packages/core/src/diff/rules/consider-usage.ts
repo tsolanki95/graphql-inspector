@@ -21,7 +21,9 @@ export interface ConsiderUsageConfig {
    *
    * @param input Object
    */
-  checkUsage?(input: Array<{type: string; field: string}>): Promise<boolean[]>;
+  checkUsage?(
+    input: Array<{type: string; field: string; argument?: string}>,
+  ): Promise<boolean[]>;
 }
 
 export const considerUsage: Rule<ConsiderUsageConfig> = async ({
@@ -35,15 +37,17 @@ export const considerUsage: Rule<ConsiderUsageConfig> = async ({
   const collectedBreakingField: Array<{
     type: string;
     field: string;
+    argument?: string;
   }> = [];
 
   changes.forEach((change) => {
     if (change.criticality.level === CriticalityLevel.Breaking && change.path) {
-      const [typeName, fieldName] = parsePath(change.path);
+      const [typeName, fieldName, argumentName] = parsePath(change.path);
 
       collectedBreakingField.push({
         type: typeName,
         field: fieldName,
+        argument: argumentName,
       });
     }
   });
@@ -55,7 +59,7 @@ export const considerUsage: Rule<ConsiderUsageConfig> = async ({
   // includes only those that are safe to break the api
   const suppressedPaths = collectedBreakingField
     .filter((_, i) => usageList[i] === true)
-    .map(({type, field}) => `${type}.${field}`);
+    .map(({type, field, argument}) => [type, field, argument].join('.'));
 
   return changes.map((change) => {
     // Turns those "safe to break" changes into "dangerous"
