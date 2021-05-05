@@ -22,7 +22,7 @@ export interface ConsiderUsageConfig {
    * @param input Object
    */
   checkUsage?(
-    input: Array<{type: string; field: string; argument?: string}>,
+    input: Array<{type: string; field?: string; argument?: string}>,
   ): Promise<boolean[]>;
 }
 
@@ -59,7 +59,9 @@ export const considerUsage: Rule<ConsiderUsageConfig> = async ({
   // includes only those that are safe to break the api
   const suppressedPaths = collectedBreakingField
     .filter((_, i) => usageList[i] === true)
-    .map(({type, field, argument}) => [type, field, argument].join('.'));
+    .map(({type, field, argument}) =>
+      [type, field, argument].filter(Boolean).join('.'),
+    );
 
   return changes.map((change) => {
     // Turns those "safe to break" changes into "dangerous"
